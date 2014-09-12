@@ -1,0 +1,199 @@
+#!/bin/bash
+#
+
+XDG_CACHE_HOME=~/.cache
+
+# Source & Output
+
+read -e -p "Source: " dvd
+echo 
+lsdvd "$dvd" 2>/dev/null | grep -e Length -e Longest | awk '{print $1,$2,$3,$4,$5,$6}' | sed 's/,$//' 
+echo
+read -p "Title: " title
+echo
+read -e -p "Output name: " output
+echo
+
+test -d "$XDG_CACHE_HOME/encode/$output" && mv -f "$XDG_CACHE_HOME/encode/$output" "$XDG_CACHE_HOME/encode/$output-$(date +%s)"
+mkdir -p "$XDG_CACHE_HOME/encode/$output"
+temp="$XDG_CACHE_HOME/encode/$output"
+info="$temp/info"
+
+# Video setup
+
+echo "Gathering information... "
+mplayer -dvd-device "$dvd" dvd://$title -identify -nosound -vo null -frames 1 -nocache 2>/dev/null > "$info" 
+length=$(grep "ID_LENGTH" "$info" | cut -f '2' -d '=' | cut -f '1' -d '.')
+mplayer -dvd-device "$dvd" dvd://$title -identify -vf cropdetect=24:4 -nosound -vo null -nocache -ss $(($length/2)) -frames 300 2>/dev/null > "$info"
+crop=$(grep "crop=" "$info" | tail -n 1 | awk '{print $9}' | sed 's/crop=//g; s/).//g')
+echo
+echo "Starting preview..."
+sleep 2
+mplayer -really-quiet -dvd-device "$dvd" dvd://$title -vf rectangle=$crop -nosound -nocache 2>/dev/null
+echo
+grep "VIDEO:" "$info"
+echo
+echo "MPlayer detected $crop cropping values."
+read -p "Crop (W:H:X:Y): " crop
+echo
+res=$(echo $crop | awk -F: '{print $1,$2}' | sed 's/ /x/')
+echo "Resolution set to $res"
+echo
+read -p "Bitrate: " bitrate
+echo
+read -p "Post-processing (none, ivtc, deinterlace, custom): " filters
+   if [ $filters = ivtc ]; then
+	filters="-vf pullup,softskip,harddup,crop=$crop,format=i420"
+	echo 
+	echo "Adding $filters"
+	echo 
+     elif [ $filters = deinterlace ]; then
+	filters="-vf yadif=1,mcdeint=1:0:10,framestep=2,softskip,harddup,crop=$crop,format=i420 -field-dominance 0"
+	echo 
+	echo "Adding $filters"
+	echo 
+     elif [ $filters = custom ]; then
+	echo 
+	read -p 'Enter filters MEncoder style starting with "-vf": ' filters
+	echo "Adding $filters"
+     else filters="-vf crop=$crop,softskip,harddup,format=i420"
+	echo 
+	echo "Using default $filters"
+   fi
+echo 
+fps=$(grep "FPS" "$info" | awk -F= '{print $2}')
+   if [ $fps = 29.970 ]; then
+	fps="30000/1001"
+	echo "Source FPS: $fps"
+   elif [ $fps = 23.976 ]; then
+	fps="240000/1001"
+	echo "Source FPS: $fps"
+   else
+	echo "Source FPS: $fps"
+   fi
+echo
+read -p "Set Output FPS: " ofps
+echo
+echo "------------------------------"
+echo "| NTSC 16:9 | 40:33 or 32:27 |"
+echo "|       4:3 | 10:11 or 8:9   |"
+echo "------------------------------"
+echo "| PAL  16:9 | 16:11 or 64:45 |"
+echo "|       4:3 | 12:11 or 16:15 |"
+echo "------------------------------"
+echo
+read -p "SAR: " sar
+echo
+
+# Audio setup
+
+grep "audio stream" "$info"
+echo
+read -p "List audio streams (aid) separated by commas (max. 3): " streams
+audio=$(echo $streams | sed "s/,/ /g")
+declare -a aids=($streams)
+  if [ ${#aids[@]} = 1 ]; then
+	atracks="--default-track 0:yes --compression 0:none --track-name 0:\"$(grep "aid: ${aids[0]}" "$info" | awk -F: '{ print $3 $4 }' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[0]}.ac3\""
+    elif [ ${#aids[@]} = 2 ]; then
+	atracks="--default-track 0:yes --compression 0:none --track-name 0:\"$(grep "aid: ${aids[0]}" "$info" | awk -F: '{ print $3 $4 }' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aidss[0]}.ac3\" --compression 0:none --track-name 0:\"$(grep "aid: ${aids[1]}" "$info" | awk -F: '{ print $3 $4 }' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[1]}.ac3\""
+    elif [ ${#aids[@]} = 3 ]; then
+	atracks="--default-track 0:yes --compression 0:none --track-name 0:\"$(grep "aid: ${aids[0]}" "$info" | awk -F: '{ print $3 $4 )' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[0]}.ac3\" --compression 0:none --track-name 0:\"$(grep "aid: ${aids[1]}" "$info" | awk -F: '{ print $3 $4 }' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[1]}.ac3\" --compression 0:none --track-name 0:\"$(grep "aid: ${aids[2]}" "$info" | awk -F: '{ print $3 $4 }' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[2]}.ac3\""
+    else
+	atracks=""
+  fi
+echo
+
+# Chapters
+
+dvdxchap -t $title "$dvd" 2>/dev/null > "$temp/$output.txt"
+echo "Chapters saved to $temp/$output.txt"
+echo	
+
+# Script to encode later
+
+read -p "Save script to encode later [y/n]? " script
+echo
+   if [ $script = y ]; then
+	cat > "$output.encode" <<EncodeScript
+#!/bin/bash
+# Encoding script
+echo "Dumping Audio"
+for aid in $streams; do
+	mencoder -dvd-device "$dvd" dvd://$title -msglevel all=0:statusline=5 -aid \$aid -of rawaudio \\
+	-ovc copy -oac copy -fps $fps -ofps $ofps -nocache -o "$temp/$output-\$aid.ac3" 2>/dev/null
+	echo
+done
+
+test -e "$temp/pipe.yuv" && rm "$temp/pipe.yuv"
+mkfifo "$temp/pipe.yuv"
+echo
+echo "Running First Pass"
+echo
+mencoder -dvd-device "$dvd" dvd://$title -msglevel all=0:statusline=5 -of rawvideo -ovc raw -fps $fps \\
+-ofps $ofps -nocache -nosound -nosub $filters -o "$temp/pipe.yuv" 2>/dev/null & 
+
+x264 "$temp/pipe.yuv" --profile high --level 3.1 --pass 1 --no-progress --bitrate $bitrate --ratetol 2.0 \\
+--stats "$temp/stats" --deblock -3:-3 --bframes 5 --b-adapt 2 --b-pyramid normal --ref 8 --weightp 0 --merange 24 \\
+--me esa --direct auto --subme 9 --partitions all --trellis 2 --no-dct-decimate --no-fast-pskip --aq-strength 0.6 \\
+--sar $sar --input-res $res --fps $ofps --output /dev/null 2>"$temp/x264.log"
+echo
+echo
+echo "Running Second Pass"
+echo
+mencoder -dvd-device "$dvd" dvd://$title -msglevel all=0:statusline=5 -of rawvideo -ovc raw -fps $fps \\
+-ofps $ofps -nocache -nosound -nosub $filters -o "$temp/pipe.yuv" 2>/dev/null &
+
+x264 "$temp/pipe.yuv" --profile high --level 3.1 --pass 2 --no-progress --bitrate $bitrate --ratetol 2.0 \\
+--stats "$temp/stats" --deblock -3:-3 --bframes 5 --b-adapt 2 --b-pyramid normal --ref 8 --weightp 0 --merange 24 \\
+--me esa --direct auto --subme 9 --partitions all --trellis 2 --no-dct-decimate --no-fast-pskip --aq-strength 0.6 \\
+--sar $sar --input-res $res --fps $ofps --output "$temp/$output.mkv" 2>>"$temp/x264.log"
+
+test -e "$output.mkv" && mv -f "$output.mkv" "$output.mkv.\$(date +%s)"
+mkvmerge --title "$output" -o "$output.mkv" --default-track 0:yes --compression 0:none "$temp/$output.mkv" $atracks --chapters "$temp/$output.txt"
+
+echo "All left-over files are in $temp"
+EncodeScript
+	chmod +x "$output.encode"
+	echo "Script saved to $output.encode"
+	echo
+
+# Encoding
+
+   else
+	echo "Dumping Audio"
+	   for aid in $streams; do
+		mencoder -dvd-device "$dvd" dvd://$title -msglevel all=0:statusline=5 -aid $aid -of rawaudio \
+		-ovc copy -oac copy -fps $fps -ofps $ofps -nocache -o "$temp/$output-$aid.ac3" 2>/dev/null 
+		echo
+	   done
+	mkfifo "$temp/pipe.yuv"
+	echo
+	echo "Running First Pass"
+	echo
+	mencoder -dvd-device "$dvd" dvd://$title -msglevel all=0:statusline=5 -of rawvideo -ovc raw -fps $fps -ofps $ofps \
+		 -nocache -nosound -nosub $filters -o "$temp/pipe.yuv" 2>/dev/null & 
+
+	x264 "$temp/pipe.yuv" --profile high --level 3.1 --pass 1 --no-progress \
+		--bitrate $bitrate --ratetol 2.0 --stats "$temp/stats" --deblock -3:-3 --bframes 5 --b-adapt 2 --b-pyramid normal \
+		--ref 8 --weightp 0 --merange 24 --me esa --direct auto --subme 9 --partitions all --trellis 2 --no-dct-decimate \
+		--no-fast-pskip --aq-strength 0.6 --sar $sar --input-res $res --fps $ofps --output /dev/null 2>"$temp/x264.log"
+	echo
+	echo
+	echo "Running Second Pass"
+	echo
+	mencoder -dvd-device "$dvd" dvd://$title -msglevel all=0:statusline=5 -of rawvideo -ovc raw -fps $fps -ofps $ofps \
+		-nocache -nosound -nosub $filters -o "$temp/pipe.yuv" 2>/dev/null &
+
+	x264 "$temp/pipe.yuv" --profile high --level 3.1 --pass 2 --quiet --no-progress \
+		--bitrate $bitrate --ratetol 2.0 --stats "$temp/stats" --deblock -3:-3 --bframes 5 --b-adapt 2 --b-pyramid normal \
+		--ref 8 --weightp 0 --merange 24 --me esa --direct auto --subme 9 --partitions all --trellis 2 --no-dct-decimate \
+		--no-fast-pskip --aq-strength 0.6 --sar $sar --input-res $res --fps $ofps --output "$temp/$output.mkv" 2>>"$temp/x264.log"
+
+# Muxing
+
+	test -e "$output.mkv" && mv -f "$output.mkv" "$output.mkv.$(date +%s)"
+	mkvmerge --title "$output" -o "$output.mkv" --default-track 0:yes --compression 0:none "$temp/$output.mkv" $atracks --chapters "$temp/$output.txt"
+
+	echo "All left-over files are in $temp"
+   fi
+exit 0
