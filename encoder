@@ -107,9 +107,9 @@ echo
 
 # Subtitles
 
-read -e -p "Path to subtitle (SRT) file(s), separated by a comma (max 2, hit enter if none): " subs
+read -e -p "Path to subtitle (SRT) file(s), separated by a comma (max 2, eg. 'sub1 , sub2'. Hit enter if none): " subs
 oIFS="$IFS"
-IFS=','
+IFS=' , '
 declare -a sids=($subs)
 IFS="$oIFS"
 read -p "List subtitle languages in same order with three letters (eg. english=eng, french=fre, spanish=spa) separated by a space " slang
