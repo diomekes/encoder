@@ -93,6 +93,7 @@ read -p "List audio streams (aid) separated by commas (max. 3): " streams
 audio=$(echo $streams | sed "s/,/ /g")
 declare -a aids=($audio)
 read -p "List audio languages in same order with three letters (eg. english=eng, french=fre, spanish=spa) separated by spaces: " alang
+declare -a alangs=($alang)
   if [ ${#aids[@]} = 1 ]; then
 	atracks="--default-track 0:yes --language 0:${alangs[0]} --compression 0:none --track-name 0:\"$(grep "aid: ${aids[0]}" "$info" | awk -F: '{ print $3 $4 }' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[0]}.ac3\""
     elif [ ${#aids[@]} = 2 ]; then
