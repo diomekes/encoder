@@ -109,7 +109,9 @@ echo
 
 read -e -p "Path to subtitle (SRT) file(s), separated by space (max 2, hit enter if none): " subs
 declare -a sids=($subs)
-read -p "List subtitle languages in same order with three letters (eg. english=eng, french=fre, spanish=spa) separated by a space: " slang
+read -p "List subtitle languages in same order with three letters (eg. english=eng, french=fre, spanish=spa) separated by a comma: " slang
+oIFS="$IFS"
+IFS=','
 declare -a slangs=($slang)
   if [ ${#sids[@]} = 1 ]; then
 	subtracks="--language 0:${slangs[0]} \"${sids[0]}\""
@@ -118,6 +120,7 @@ declare -a slangs=($slang)
     else
 	subtracks=""
   fi
+IFS="$oIFS"
 echo
 
 # Chapters
