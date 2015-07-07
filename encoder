@@ -91,15 +91,31 @@ grep "audio stream" "$info"
 echo
 read -p "List audio streams (aid) separated by commas (max. 3): " streams
 audio=$(echo $streams | sed "s/,/ /g")
-declare -a aids=($streams)
+declare -a aids=($audio)
+read -p "List audio languages in same order with three letters (eg. english=eng, french=fre, spanish=spa) separated by spaces: " alang
   if [ ${#aids[@]} = 1 ]; then
-	atracks="--default-track 0:yes --compression 0:none --track-name 0:\"$(grep "aid: ${aids[0]}" "$info" | awk -F: '{ print $3 $4 }' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[0]}.ac3\""
+	atracks="--default-track 0:yes --language 0:${alangs[0]} --compression 0:none --track-name 0:\"$(grep "aid: ${aids[0]}" "$info" | awk -F: '{ print $3 $4 }' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[0]}.ac3\""
     elif [ ${#aids[@]} = 2 ]; then
-	atracks="--default-track 0:yes --compression 0:none --track-name 0:\"$(grep "aid: ${aids[0]}" "$info" | awk -F: '{ print $3 $4 }' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aidss[0]}.ac3\" --compression 0:none --track-name 0:\"$(grep "aid: ${aids[1]}" "$info" | awk -F: '{ print $3 $4 }' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[1]}.ac3\""
+	atracks="--default-track 0:yes --language 0:${alangs[0]} --compression 0:none --track-name 0:\"$(grep "aid: ${aids[0]}" "$info" | awk -F: '{ print $3 $4 }' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[0]}.ac3\" --language 0:${alangs[1]} --compression 0:none --track-name 0:\"$(grep "aid: ${aids[1]}" "$info" | awk -F: '{ print $3 $4 }' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[1]}.ac3\""
     elif [ ${#aids[@]} = 3 ]; then
-	atracks="--default-track 0:yes --compression 0:none --track-name 0:\"$(grep "aid: ${aids[0]}" "$info" | awk -F: '{ print $3 $4 )' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[0]}.ac3\" --compression 0:none --track-name 0:\"$(grep "aid: ${aids[1]}" "$info" | awk -F: '{ print $3 $4 }' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[1]}.ac3\" --compression 0:none --track-name 0:\"$(grep "aid: ${aids[2]}" "$info" | awk -F: '{ print $3 $4 }' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[2]}.ac3\""
+	atracks="--default-track 0:yes --language 0:${alangs[0]} --compression 0:none --track-name 0:\"$(grep "aid: ${aids[0]}" "$info" | awk -F: '{ print $3 $4 )' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[0]}.ac3\" --language 0:${alangs[1]} --compression 0:none --track-name 0:\"$(grep "aid: ${aids[1]}" "$info" | awk -F: '{ print $3 $4 }' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[1]}.ac3\" --language 0:${alangs[2]} --compression 0:none --track-name 0:\"$(grep "aid: ${aids[2]}" "$info" | awk -F: '{ print $3 $4 }' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[2]}.ac3\""
     else
 	atracks=""
+  fi
+echo
+
+# Subtitles
+
+read -e -p "Path to subtitle (SRT) file(s), separated by space (max 2, hit enter if none): " subs
+declare -a sids=($subs)
+read -p "List subtitle languages in same order with three letters (eg. english=eng, french=fre, spanish=spa) separated by a space: " slang
+declare -a slangs=($slang)
+  if [ ${#sids[@]} = 1 ]; then
+	subtracks="--language 0:${slangs[0]} \"${sids[0]}\""
+    elif [ ${#sids[@]} = 2 ]; then
+	subtracks="--language 0:${slangs[0]} \"${sids[0]}\" --language 0:${slangs[1]} \"${sids[1]}\""
+    else
+	subtracks=""
   fi
 echo
 
@@ -149,7 +165,7 @@ x264 "$temp/pipe.yuv" --profile high --level 3.1 --pass 2 --no-progress --bitrat
 --sar $sar --input-res $res --fps $ofps --output "$temp/$output.mkv" 2>>"$temp/x264.log"
 
 test -e "$output.mkv" && mv -f "$output.mkv" "$output.mkv.\$(date +%s)"
-mkvmerge --title "$output" -o "$output.mkv" --default-track 0:yes --compression 0:none "$temp/$output.mkv" $atracks --chapters "$temp/$output.txt"
+mkvmerge --title "$output" -o "$output.mkv" --default-track 0:yes --compression 0:none "$temp/$output.mkv" $atracks --chapters "$temp/$output.txt" $subtracks
 
 echo "All left-over files are in $temp"
 EncodeScript
@@ -192,7 +208,7 @@ EncodeScript
 # Muxing
 
 	test -e "$output.mkv" && mv -f "$output.mkv" "$output.mkv.$(date +%s)"
-	mkvmerge --title "$output" -o "$output.mkv" --default-track 0:yes --compression 0:none "$temp/$output.mkv" $atracks --chapters "$temp/$output.txt"
+	mkvmerge --title "$output" -o "$output.mkv" --default-track 0:yes --compression 0:none "$temp/$output.mkv" $atracks --chapters "$temp/$output.txt" $subtracks
 
 	echo "All left-over files are in $temp"
    fi
