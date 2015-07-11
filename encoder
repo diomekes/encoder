@@ -153,7 +153,7 @@ mencoder -dvd-device "$dvd" dvd://$title -msglevel all=0:statusline=5 -of rawvid
 -ofps $ofps -nocache -nosound -nosub $filters -o "$temp/pipe.yuv" 2>/dev/null & 
 
 x264 "$temp/pipe.yuv" --profile high --level 3.1 --pass 1 --no-progress --bitrate $bitrate --ratetol 2.0 \\
---stats "$temp/stats" --deblock -3:-3 --bframes 5 --b-adapt 2 --b-pyramid normal --ref 8 --weightp 2 --rc-lookagead 60 --merange 24 \\
+--stats "$temp/stats" --deblock -3:-3 --bframes 5 --b-adapt 2 --b-pyramid normal --ref 8 --weightp 2 --rc-lookahead 60 --merange 24 \\
 --me umh --direct auto --subme 10 --partitions all --trellis 2 --no-dct-decimate --no-fast-pskip --aq-strength 1.0 \\
 --psnr --ssim --sar $sar --input-res $res --fps $ofps --output /dev/null 2>"$temp/x264.log"
 echo
@@ -164,7 +164,7 @@ mencoder -dvd-device "$dvd" dvd://$title -msglevel all=0:statusline=5 -of rawvid
 -ofps $ofps -nocache -nosound -nosub $filters -o "$temp/pipe.yuv" 2>/dev/null &
 
 x264 "$temp/pipe.yuv" --profile high --level 3.1 --pass 2 --no-progress --bitrate $bitrate --ratetol 2.0 \\
---stats "$temp/stats" --deblock -3:-3 --bframes 5 --b-adapt 2 --b-pyramid normal --ref 8 --weightp 2 --rc-lookagead 60 --merange 24 \\
+--stats "$temp/stats" --deblock -3:-3 --bframes 5 --b-adapt 2 --b-pyramid normal --ref 8 --weightp 2 --rc-lookahead 60 --merange 24 \\
 --me umh --direct auto --subme 10 --partitions all --trellis 2 --no-dct-decimate --no-fast-pskip --aq-strength 1.0 \\
 --psnr --ssim --sar $sar --input-res $res --fps $ofps --output "$temp/$output.mkv" 2>>"$temp/x264.log"
 
@@ -195,7 +195,7 @@ EncodeScript
 
 	x264 "$temp/pipe.yuv" --profile high --level 3.1 --pass 1 --no-progress \
 		--bitrate $bitrate --ratetol 2.0 --stats "$temp/stats" --deblock -3:-3 --bframes 5 --b-adapt 2 --b-pyramid normal \
-		--ref 8 --weightp 2 --rc-lookagead 60  --merange 24 --me umh --direct auto \
+		--ref 8 --weightp 2 --rc-lookahead 60  --merange 24 --me umh --direct auto \
 		--subme 10 --partitions all --trellis 2 --no-dct-decimate --psnr --ssim \
 		--no-fast-pskip --aq-strength 1.0 --sar $sar --input-res $res --fps $ofps --output /dev/null 2>"$temp/x264.log"
 	echo
@@ -207,7 +207,7 @@ EncodeScript
 
 	x264 "$temp/pipe.yuv" --profile high --level 3.1 --pass 2 --quiet --no-progress \
 		--bitrate $bitrate --ratetol 2.0 --stats "$temp/stats" --deblock -3:-3 --bframes 5 --b-adapt 2 --b-pyramid normal \
-		--ref 8 --weightp 2 --rc-lookagead 60 --merange 24 --me umh --direct auto \
+		--ref 8 --weightp 2 --rc-lookahead 60 --merange 24 --me umh --direct auto \
 		--subme 10 --partitions all --trellis 2 --no-dct-decimate --psnr --ssim \
 		--no-fast-pskip --aq-strength 1.0 --sar $sar --input-res $res --fps $ofps --output "$temp/$output.mkv" 2>>"$temp/x264.log"
 
