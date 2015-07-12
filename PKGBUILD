@@ -1,6 +1,6 @@
 pkgname=encoder
 pkgver=1.2
-pkgrel=2
+pkgrel=3
 pkgdesc="Encode DVD to MKV using x264"
 url=""
 arch=('i686' 'x86_64')
