@@ -56,7 +56,7 @@ read -p "Post-processing (none, ivtc, deinterlace, custom): " filters
 	echo 
 	read -p 'Enter filters MEncoder style starting with "-vf": ' filters
 	echo "Adding $filters"
-     else filters="-vf crop=$crop,softskip,harddup,format=i420"
+     else filters="-vf softskip,harddup,crop=$crop,format=i420"
 	echo 
 	echo "Using default $filters"
    fi
@@ -92,7 +92,7 @@ echo
 read -p "List audio streams (aid) separated by commas (max. 3): " streams
 audio=$(echo $streams | sed "s/,/ /g")
 declare -a aids=($audio)
-read -p "List audio languages in same order with three letters (eg. english=eng, french=fre, spanish=spa) separated by spaces: " alang
+read -p "List audio languages in same order with three letters (eg. english=eng, french=fre, undetermined=und) separated by spaces: " alang
 declare -a alangs=($alang)
   if [ ${#aids[@]} = 1 ]; then
 	atracks="--default-track 0:yes --language 0:${alangs[0]} --compression 0:none --track-name 0:\"$(grep "aid: ${aids[0]}" "$info" | awk -F: '{ print $3 $4 }' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[0]}.ac3\""
@@ -112,7 +112,7 @@ oIFS="$IFS"
 IFS=','
 declare -a sids=($subs)
 IFS="$oIFS"
-read -p "List subtitle languages in same order with three letters (eg. english=eng, french=fre, spanish=spa) separated by a space: " slang
+read -p "List subtitle languages in same order with three letters (eg. english=eng, french=fre, undetermined=und) separated by a space: " slang
 declare -a slangs=($slang)
   if [ ${#sids[@]} = 1 ]; then
 	subtracks="--language 0:${slangs[0]} \"${sids[0]}\""
