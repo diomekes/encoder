@@ -48,7 +48,7 @@ read -p "Post-processing (none, ivtc, deinterlace, custom): " filters
 	echo "Adding $filters"
 	echo 
      elif [ $filters = deinterlace ]; then
-	filters="-vf crop=$crop,yadif=1,mcdeint=1:0:10,framestep=2,softskip,harddup,format=i420 -field-dominance 0"
+	filters="-vf yadif=1,mcdeint=1:0:10,framestep=2,softskip,harddup,crop=$crop,format=i420 -field-dominance 0"
 	echo 
 	echo "Adding $filters"
 	echo 
