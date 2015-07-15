@@ -92,17 +92,23 @@ echo
 read -p "List audio streams (aid) separated by commas (max. 3): " streams
 audio=$(echo $streams | sed "s/,/ /g")
 declare -a aids=($audio)
-read -p "List audio languages in same order with three letters (eg. english=eng, french=fre, undetermined=und) separated by spaces: " alang
-declare -a alangs=($alang)
-  if [ ${#aids[@]} = 1 ]; then
-	atracks="--default-track 0:yes --language 0:${alangs[0]} --compression 0:none --track-name 0:\"$(grep "aid: ${aids[0]}" "$info" | awk -F: '{ print $3 $4 }' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[0]}.ac3\""
-    elif [ ${#aids[@]} = 2 ]; then
-	atracks="--default-track 0:yes --language 0:${alangs[0]} --compression 0:none --track-name 0:\"$(grep "aid: ${aids[0]}" "$info" | awk -F: '{ print $3 $4 }' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[0]}.ac3\" --language 0:${alangs[1]} --compression 0:none --track-name 0:\"$(grep "aid: ${aids[1]}" "$info" | awk -F: '{ print $3 $4 }' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[1]}.ac3\""
-    elif [ ${#aids[@]} = 3 ]; then
-	atracks="--default-track 0:yes --language 0:${alangs[0]} --compression 0:none --track-name 0:\"$(grep "aid: ${aids[0]}" "$info" | awk -F: '{ print $3 $4 )' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[0]}.ac3\" --language 0:${alangs[1]} --compression 0:none --track-name 0:\"$(grep "aid: ${aids[1]}" "$info" | awk -F: '{ print $3 $4 }' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[1]}.ac3\" --language 0:${alangs[2]} --compression 0:none --track-name 0:\"$(grep "aid: ${aids[2]}" "$info" | awk -F: '{ print $3 $4 }' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[2]}.ac3\""
+if [ ! -z "$streams" ]; then
+  read -p "List audio languages in same order with three letters (eg. english=eng, french=fre, undetermined=und) separated by spaces: " alang 
+  declare -a alangs=($alang)
+  case ${#aids[@]} in
+    1)
+      atracks="--default-track 0:yes --language 0:${alangs[0]} --compression 0:none --track-name 0:\"$(grep "aid: ${aids[0]}" "$info" | awk -F: '{ print $3 $4 }' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[0]}.ac3\""
+    ;;
+    2)
+      atracks="--default-track 0:yes --language 0:${alangs[0]} --compression 0:none --track-name 0:\"$(grep "aid: ${aids[0]}" "$info" | awk -F: '{ print $3 $4 }' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[0]}.ac3\" --language 0:${alangs[1]} --compression 0:none --track-name 0:\"$(grep "aid: ${aids[1]}" "$info" | awk -F: '{ print $3 $4 }' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[1]}.ac3\""
+    ;;
+    3)
+      atracks="--default-track 0:yes --language 0:${alangs[0]} --compression 0:none --track-name 0:\"$(grep "aid: ${aids[0]}" "$info" | awk -F: '{ print $3 $4 )' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[0]}.ac3\" --language 0:${alangs[1]} --compression 0:none --track-name 0:\"$(grep "aid: ${aids[1]}" "$info" | awk -F: '{ print $3 $4 }' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[1]}.ac3\" --language 0:${alangs[2]} --compression 0:none --track-name 0:\"$(grep "aid: ${aids[2]}" "$info" | awk -F: '{ print $3 $4 }' | sed 's/ language//; s/ aid//; s/ ac3/ac3/')\" \"$temp/$output-${aids[2]}.ac3\""
+    ;;
+  esac
     else
 	atracks=""
-  fi
+fi
 echo
 
 # Subtitles
@@ -112,15 +118,20 @@ oIFS="$IFS"
 IFS=','
 declare -a sids=($subs)
 IFS="$oIFS"
-read -p "List subtitle languages in same order with three letters (eg. english=eng, french=fre, undetermined=und) separated by a space: " slang
-declare -a slangs=($slang)
-  if [ ${#sids[@]} = 1 ]; then
-	subtracks="--language 0:${slangs[0]} \"${sids[0]}\""
-    elif [ ${#sids[@]} = 2 ]; then
-	subtracks="--language 0:${slangs[0]} \"${sids[0]}\" --language 0:${slangs[1]} \"${sids[1]}\""
+if [ ! -z "$subs" ]; then
+  read -p "List subtitle languages in same order with three letters (eg. english=eng, french=fre, undetermined=und) separated by a space: " slang
+  declare -a slangs=($slang)
+  case ${#sids[@]} in
+    1)
+      subtracks="--language 0:${slangs[0]} \"${sids[0]}\""
+    ;;
+    2)
+      subtracks="--language 0:${slangs[0]} \"${sids[0]}\" --language 0:${slangs[1]} \"${sids[1]}\""
+    ;;
+  esac
     else
 	subtracks=""
-  fi
+fi
 echo
 
 # Chapters
