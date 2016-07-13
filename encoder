@@ -151,7 +151,7 @@ echo
 echo "Dumping Audio"
 for aid in $streams; do
 	mencoder -dvd-device "$dvd" dvd://$title -msglevel all=0:statusline=5 -aid \$aid -of rawaudio \\
-	-ovc copy -oac copy -fps $fps -ofps $ofps -nocache -o "$temp/$output-\$aid.ac3" 2>/dev/null
+	-ovc copy -oac copy -fps $fps -ofps $ofps -ni -nocache -o "$temp/$output-\$aid.ac3" 2>/dev/null
 	echo
 done
 
@@ -194,7 +194,7 @@ EncodeScript
 	echo "Dumping Audio"
 	   for aid in $streams; do
 		mencoder -dvd-device "$dvd" dvd://$title -msglevel all=0:statusline=5 -aid $aid -of rawaudio \
-		-ovc copy -oac copy -fps $fps -ofps $ofps -nocache -o "$temp/$output-$aid.ac3" 2>/dev/null 
+		-ovc copy -oac copy -fps $fps -ofps $ofps -ni -nocache -o "$temp/$output-$aid.ac3" 2>/dev/null 
 		echo
 	   done
 	mkfifo "$temp/pipe.yuv"
