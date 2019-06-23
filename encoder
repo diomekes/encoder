@@ -185,6 +185,7 @@ mkvmerge --title "$output" -o "$output.mkv" --default-track 0:yes --compression 
 echo "All left-over files are in $temp"
 EncodeScript
 	chmod +x "$output.encode"
+	cp "$output.encode" "$temp/"
 	echo "Script saved to $output.encode"
 	echo
 
